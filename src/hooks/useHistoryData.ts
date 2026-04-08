@@ -11,7 +11,7 @@ export function useHistoryData() {
   const [state, setState] = useState<State>({ data: null, loading: true, error: null })
 
   useEffect(() => {
-    fetch('/data/podcast-stats.json')
+    fetch(`${import.meta.env.BASE_URL}data/podcast-stats.json`)
       .then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`)
         return r.json() as Promise<PodcastStats>
