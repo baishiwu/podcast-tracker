@@ -1,73 +1,54 @@
-import { AlertCircle } from 'lucide-react'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { Header } from '@/components/layout/Header'
-import { StatsBar } from './StatsBar'
-import { ActivityChart } from './ActivityChart'
-import { TopShows } from './TopShows'
-import { RecentEpisodes } from './RecentEpisodes'
-import { FollowedShows } from './FollowedShows'
-import { useSpotifyData } from '@/hooks/useSpotifyData'
+import { useHistoryData } from '@/hooks/useHistoryData'
+import { StatsHeader } from '@/components/viz/StatsHeader'
+import { TopShowsChart } from '@/components/viz/TopShowsChart'
+import { RankingsChart } from '@/components/viz/RankingsChart'
+import { HourlyHeatmap } from '@/components/viz/HourlyHeatmap'
 
 export function DashboardPage() {
-  const {
-    profile,
-    episodes,
-    followedShows,
-    topShows,
-    activityByDay,
-    stats,
-    isLoading,
-    loadingMore,
-    hasMore,
-    loadMore,
-    error,
-  } = useSpotifyData()
+  const { data, loading, error } = useHistoryData()
+
+  const years = data?.meta.years.filter(y => y < 2026) ?? []
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <Header profile={profile} />
+    <div className="min-h-screen bg-stone-50">
+      <header className="border-b border-stone-200 bg-stone-50">
+        <div className="max-w-4xl mx-auto px-6 py-5">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-stone-400 mb-1">
+            Personal archive
+          </div>
+          <h1 className="font-display text-3xl font-semibold text-stone-900 leading-tight">
+            Podcast Listening History
+          </h1>
+        </div>
+      </header>
 
-      <main className="flex-1 container mx-auto px-4 py-6 space-y-6 max-w-4xl">
-        {error && !(error instanceof Error && error.message === 'session_expired') && (
-          <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 rounded-lg p-3">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            <span>Failed to load data. Check your connection and try reconnecting.</span>
+      <main className="max-w-4xl mx-auto px-6 pb-20">
+        {loading && (
+          <div className="py-24 text-center text-stone-400 text-sm">Loading your history…</div>
+        )}
+
+        {error && (
+          <div className="py-24 text-center text-stone-400 text-sm">
+            Could not load data. Run <code className="font-mono bg-stone-100 px-1">npm run process</code> first.
           </div>
         )}
 
-        <StatsBar
-          totalEpisodes={stats.totalEpisodes}
-          totalMinutes={stats.totalMinutes}
-          uniqueShows={stats.uniqueShows}
-          isLoading={isLoading}
-        />
-
-        <Tabs defaultValue="overview">
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="recent">Recent</TabsTrigger>
-            <TabsTrigger value="shows">Shows</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview" className="space-y-4 mt-4">
-            <ActivityChart data={activityByDay} isLoading={isLoading} />
-            <TopShows shows={topShows} isLoading={isLoading} />
-          </TabsContent>
-
-          <TabsContent value="recent" className="mt-4">
-            <RecentEpisodes
-              episodes={episodes}
-              isLoading={isLoading}
-              hasMore={hasMore}
-              loadingMore={loadingMore}
-              onLoadMore={loadMore}
+        {data && (
+          <>
+            <StatsHeader
+              totalHours={data.meta.totalHours}
+              totalEpisodes={data.meta.totalEpisodes}
+              uniqueShows={data.meta.uniqueShows}
+              years={years}
             />
-          </TabsContent>
 
-          <TabsContent value="shows" className="mt-4">
-            <FollowedShows shows={followedShows} isLoading={isLoading} />
-          </TabsContent>
-        </Tabs>
+            <div className="space-y-16">
+              <RankingsChart shows={data.shows} years={years} />
+              <HourlyHeatmap hourly={data.hourly} years={years} />
+              <TopShowsChart shows={data.shows} years={years} />
+            </div>
+          </>
+        )}
       </main>
     </div>
   )
